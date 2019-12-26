@@ -18,7 +18,7 @@ class App extends Component {
   }
 
   getData(){
-    fetch('http://localhost:4000/properties')
+    fetch('http://18.222.208.186:4000/properties')
     .then(res => res.json())
     .then((data) => {
       this.setState({ properties: data });
@@ -34,7 +34,7 @@ class App extends Component {
 
   // api call for filter property by name, city, state
   filterProperties(input) {
-    fetch(`http://localhost:4000/filterItem/?filterItem=${input}`)
+    fetch(`http://18.222.208.186:4000/filterItem/?filterItem=${input}`)
     .then(res => res.json())
     .then((data) => {
       this.setState({ properties: data });

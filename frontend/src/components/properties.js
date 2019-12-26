@@ -11,7 +11,7 @@ class Properties extends Component {
 
   fetchPropertyDetails = (e) => {
     const propertyId = e.target.getAttribute('data-item');
-    fetch(`http://localhost:4000/images/?propertyId=${propertyId}`)
+    fetch(`http://18.222.208.186:4000/images/?propertyId=${propertyId}`)
     .then(res => res.json())
     .then((data) => {
       const result = JSON.parse(data.image);
@@ -72,7 +72,7 @@ class Properties extends Component {
                 <div className={"row"}>
                   {this.state.images.map(image =>
                       <div className={"column"}>
-                        <img src={'http://localhost:4000/' + image.image} />
+                        <img src={'http://18.222.208.186:4000/' + image.image} />
                       </div>)}
                 </div>
             )}
