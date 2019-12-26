@@ -9,6 +9,7 @@
 //   phone varchar(255) not null,
 //   type varchar(255) not null,
 //   capacity varchar(255) not null,
+//   image varchar (255) not null,
 //   constraint pk_properties primary key (id)
 // );
 

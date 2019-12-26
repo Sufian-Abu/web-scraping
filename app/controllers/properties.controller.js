@@ -1,18 +1,19 @@
-// isle = {image: '/images/the_isle_at_watermere/one.jpg'}, {image: '/images/the_isle_at_watermere/two.png'}, {image: '/images/the_isle_at_watermere/three.png'}
-// creekside = {image: '/images/brookdale_creekside/one.jpg'}, {image: '/images/brookdale_creekside/two.jpg'}, {image: '/images/brookdale_creekside/three.jpg'}
-// delaney = {image: '/images/the_delaney_at_georgetown_village/one.png'}, {image: '/images/the_delaney_at_georgetown_village/two.png'}, {image: '/images/the_delaney_at_georgetown_village/three.png'}
-
 const Nightmare = require('nightmare');
 const cheerio = require('cheerio');
 const cheerioTableparser = require('cheerio-tableparser');
 const Properties = require("../models/properties.model.js");
+const path = require("path");
 
 exports.create = (req, res) => {
   const nightmare = Nightmare({ show: true })
   const url = 'https://apps.hhs.texas.gov/LTCSearch/namesearch.cfm';
   const isle = 'The Isle At Watermere';
+  const isleImages = ['public/images/the_isle_at_watermere/isle_one.jpg', 'public/images/the_isle_at_watermere/isle_two.png', 'public/images/the_isle_at_watermere/isle_three.png'];
   const creekside = 'Brookdale Creekside';
+  const creeksideImages = ['public/images/brookdale_creekside/creekside_one.jpg', 'public/images/brookdale_creekside/creekside_two.jpg', 'public/images/brookdale_creekside/creekside_three.jpg'];
   const delaney = 'The Delaney At Georgetown Village';
+  const delaneyImages = ['public/images/the_delaney_at_georgetown_village/delaney_one.png', 'public/images/the_delaney_at_georgetown_village/delaney_two.png', 'public/images/the_delaney_at_georgetown_village/delaney_three.png'];
+
 
   // Request making using nightmare
   nightmare
@@ -37,55 +38,60 @@ exports.create = (req, res) => {
     return data;
   }
   var objectData = {} ;
+  var s3Image;
   let saveData = (data) => {
     for (var item in data) {
       var key = data[item][0];
       objectData[key] = [];
       objectData[key].push(data[item][1]);
     }
-    // Create a Properties
-    const property = new Properties({
-      name: (""+objectData.Provider).split(/[></]/)[2],
-      address: objectData.Address[0],
-      city: objectData.City[0],
-      state: '',
-      zip_code: objectData['ZIP Code'][0],
-      county: objectData.County[0],
-      phone: objectData.Phone[0],
-      type: objectData.Type[0],
-      capacity: '',
-      image: JSON.stringify([{image: '/images/the_isle_at_watermere/one.jpg'}, {image: '/images/the_isle_at_watermere/two.png'}, {image: '/images/the_isle_at_watermere/three.png'}]),
-    });
-  // Save Properties in the databas
-    Properties.create(property, (err, data) => {
-      if (err)
-        res.status(500).send({
-          message:
-            err.message || "Some error occurred while creating the Customer."
-        });
-      else res.send(data);
+
+    uploadFile(isleImages, 6000)
+    .then(response => {
+      // Create a Properties
+      const property = new Properties({
+        name: (""+objectData.Provider).split(/[></]/)[2],
+        address: objectData.Address[0],
+        city: objectData.City[0],
+        state: '',
+        zip_code: objectData['ZIP Code'][0],
+        county: objectData.County[0],
+        phone: objectData.Phone[0],
+        type: objectData.Type[0],
+        capacity: '',
+        image: JSON.stringify(response),
+      });
+    // Save Properties in the databas
+      Properties.create(property, (err, data) => {
+        if (err)
+          res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the Customer."
+          });
+        else res.send(data);
+      });
+    }).catch(err => {
+      console.log(err);
     });
   }
 };
-
-
-// legacy = {image: '/images/legacy_at_highwoods_preserve/one.jpg'}, {image: '/images/legacy_at_highwoods_preserve/two.png'}, {image: '/images/legacy_at_highwoods_preserve/three.jpg'}
-// Emerald = {image: '/images/emerald_park_of_hollywood/one.jpg'}, {image: '/images/emerald_park_of_hollywood/two.jpg'}, {image: '/images/emerald_park_of_hollywood/three.jpg'}
-// Banyan = {image: '/images/banyan_place/one.png'}, {image: '/images/banyan_place/two.jpg'}, {image: '/images/banyan_place/three.jpg'}
 
 exports.createFlorida = (req, res) => {
   const nightmare = Nightmare({ show: true })
   const url = 'https://www.floridahealthfinder.gov/facilitylocator/FacilitySearch.aspx';
   const legacy = 'Legacy At Highwoods Preserve';
+  const legacyImages = ['public/images/legacy_at_highwoods_preserve/legacy_one.jpg', 'public/images/legacy_at_highwoods_preserve/legacy_two.png', 'public/images/legacy_at_highwoods_preserve/legacy_three.jpg'];
   const Emerald = 'Emerald Park of Hollywood';
+  const emeraldImages = ['public/images/emerald_park_of_hollywood/emerald_one.jpg', 'public/images/emerald_park_of_hollywood/emerald_two.jpg', 'public/images/emerald_park_of_hollywood/emerald_three.jpg'];
   const Banyan = 'Banyan Place';
+  const banyanImages = ['public/images/banyan_place/banyan_one.png', 'public/images/banyan_place/banyan_two.jpg', 'public/images/banyan_place/banyan_three.jpg'];
 
   // Request making using nightmare
   nightmare
     .goto(url)
     .wait('body')
     .select('select', 'ALL')
-    .type('input.DefaultField', Emerald)
+    .type('input.DefaultField', legacy)
     .click('#ctl00_mainContentPlaceHolder_SearchButton')
     .wait('table.display')
     .evaluate(() => document.querySelector('body').innerHTML)
@@ -114,49 +120,54 @@ exports.createFlorida = (req, res) => {
       objectFloridaData1[key].push(data[item][1]);
       objectFloridaData2[key].push(data[item][2]);
     }
-    // Create a Properties
-    const property1 = new Properties({
-      name: objectFloridaData1.Name[0],
-      address: objectFloridaData1['Street Address'][0],
-      city: objectFloridaData1.City[0],
-      state: objectFloridaData1.State[0],
-      zip_code: objectFloridaData1.Zip[0],
-      county: '',
-      phone: objectFloridaData1['Phone Number'][0],
-      type: objectFloridaData1.Type[0],
-      capacity: objectFloridaData1['Licensed Beds'][0],
-      image: JSON.stringify([{image: '/images/emerald_park_of_hollywood/one.jpg'}, {image: '/images/emerald_park_of_hollywood/two.jpg'}, {image: '/images/emerald_park_of_hollywood/three.jpg'}]),
-    });
-    const property2 = new Properties({
-      name: objectFloridaData2.Name[0],
-      address: objectFloridaData2['Street Address'][0],
-      city: objectFloridaData2.City[0],
-      state: objectFloridaData2.State[0],
-      zip_code: objectFloridaData2.Zip[0],
-      county: '',
-      phone: objectFloridaData2['Phone Number'][0],
-      type: objectFloridaData2.Type[0],
-      capacity: objectFloridaData2['Licensed Beds'][0],
-      image: JSON.stringify([{image: '/images/emerald_park_of_hollywood/one.jpg'}, {image: '/images/emerald_park_of_hollywood/two.jpg'}, {image: '/images/emerald_park_of_hollywood/three.jpg'}]),
-    });
-  // Save Properties in the database
-    Properties.create(property1, (err, data) => {
-      if (err)
-        res.status(500).send({
-          message:
-            err.message || "Some error occurred while creating the properties."
-        });
-      else res.send(data);
-    });
+    uploadFile(legacyImages, 10000)
+    .then(response => {
+      // Create a Properties
+      const property1 = new Properties({
+        name: objectFloridaData1.Name[0],
+        address: objectFloridaData1['Street Address'][0],
+        city: objectFloridaData1.City[0],
+        state: objectFloridaData1.State[0],
+        zip_code: objectFloridaData1.Zip[0],
+        county: '',
+        phone: objectFloridaData1['Phone Number'][0],
+        type: objectFloridaData1.Type[0],
+        capacity: objectFloridaData1['Licensed Beds'][0],
+        image: JSON.stringify(response),
+      });
+      const property2 = new Properties({
+        name: objectFloridaData2.Name[0],
+        address: objectFloridaData2['Street Address'][0],
+        city: objectFloridaData2.City[0],
+        state: objectFloridaData2.State[0],
+        zip_code: objectFloridaData2.Zip[0],
+        county: '',
+        phone: objectFloridaData2['Phone Number'][0],
+        type: objectFloridaData2.Type[0],
+        capacity: objectFloridaData2['Licensed Beds'][0],
+        image: JSON.stringify(response),
+      });
+    // Save Properties in the database
+      Properties.create(property1, (err, data) => {
+        if (err)
+          res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the properties."
+          });
+        else res.send(data);
+      });
 
-    Properties.create(property2, (err, data) => {
-      if (err)
-        res.status(500).send({
-          message:
-            err.message || "Some error occurred while creating the properties."
-        });
-      else res.send(data);
-    });
+      Properties.create(property2, (err, data) => {
+        if (err)
+          res.status(500).send({
+            message:
+              err.message || "Some error occurred while creating the properties."
+          });
+        else res.send(data);
+      });
+  }).catch(err => {
+      console.log(err);
+  });
   }
 };
 
@@ -202,3 +213,47 @@ exports.findImagesById = (req, res) => {
     } else res.send(data);
   });
 };
+
+async function sleep(ms) {
+   return new Promise(resolve=>{
+        setTimeout(resolve,ms)
+    })
+}
+
+// S3 BUCKET IMAGE UPLOAD
+
+let uploadFile = async (data, timeOut) => {
+  const fs = require('fs');
+  const AWS = require('aws-sdk');
+
+  // Enter copied or downloaded access ID and secret key here
+  const ID = 'AKIARUPIF7P54TB6FANL';
+  const SECRET = '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';
+
+  // The name of the bucket that you have created
+  const BUCKET_NAME = 'boomers-hub';
+  const s3ImageArray = [];
+
+  const s3 = new AWS.S3({
+    accessKeyId: ID,
+    secretAccessKey: SECRET
+  });
+
+  for (const value of data) {
+    const fileContent = fs.readFileSync(value);
+    var fileName = path.basename(value);
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: fileName, // File name you want to save as in S3
+      Body: fileContent
+    };
+    s3.upload(params, function (err, data) {
+      if (err) {
+        throw err;
+      }
+      s3ImageArray.push(data.Location);
+    });
+    await sleep(timeOut);
+  }
+  return s3ImageArray;
+}
